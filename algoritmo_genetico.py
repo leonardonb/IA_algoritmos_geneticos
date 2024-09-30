@@ -1,107 +1,106 @@
 import numpy as np
-from PIL import Image, ImageDraw
 import random
-import time
+import cv2  # Para carregar a imagem alvo
+import matplotlib
+matplotlib.use('Agg')  # Configura o backend para 'Agg'
+import matplotlib.pyplot as plt
 
-# Função para calcular o Erro Quadrático Médio (MSE)
-def calculate_mse(img1, img2):
-    img1 = np.array(img1).astype(np.float64)
-    img2 = np.array(img2).astype(np.float64)
-    mse = np.mean((img1 - img2) ** 2)
-    return mse
+# Parâmetros do Algoritmo Genético
+POP_SIZE = 100  # Tamanho da população
+CROMOSSOME_LENGTH = 150  # Número máximo de posições no cromossomo
+MUTATION_RATE = 0.01  # Taxa de mutação
+NUM_GENERATIONS = 100  # Número de gerações
+ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
+IMG = 'coracao.jpg'
+TARGET_IMG = cv2.imread(f'resources/in/{IMG}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+TARGET_IMG = cv2.resize(TARGET_IMG, (64, 64))  # Redimensionar para 64x64
 
-# Função para gerar uma imagem a partir de um cromossomo
-def chromosome_to_image(chromosome, img_size=(64, 64)):
-    img = Image.new('RGB', img_size, (255, 255, 255))
-    draw = ImageDraw.Draw(img)
-
-    # Interpreta cada gene (blocos de cor)
-    for i in range(0, len(chromosome), 5):
-        x = chromosome[i] % img_size[0]
-        y = chromosome[i + 1] % img_size[1]
-        size = chromosome[i + 2] % 20  # Tamanho do bloco
-        color = (chromosome[i + 3] % 256, chromosome[i + 4] % 256, (chromosome[i + 3] + chromosome[i + 4]) % 256)
-        draw.rectangle([x, y, x + size, y + size], fill=color)
-
+def chromosome_to_image(chromosome):
+    img = np.ones((64, 64), dtype=np.float32) * 255  # Cria uma imagem branca de 64x64 pixels
+    num_circles = len(chromosome) // 3
+    for i in range(num_circles):
+        x = int(chromosome[3 * i] % 64)
+        y = int(chromosome[3 * i + 1] % 64)
+        r = int(abs(chromosome[3 * i + 2]) % 10)  # Raio máximo 10
+        y_grid, x_grid = np.ogrid[:64, :64]
+        mask = (x_grid - x) ** 2 + (y_grid - y) ** 2 <= r ** 2
+        img[mask] = 0  # Círculos pretos
     return img
 
-# Função de criação da população inicial
-def create_population(pop_size, chromosome_length):
-    return [np.random.randint(0, 256, chromosome_length).tolist() for _ in range(pop_size)]
+def fitness_function(chromosome):
+    generated_img = chromosome_to_image(chromosome)
+    mse = np.mean((generated_img - TARGET_IMG) ** 2)
+    return mse
+
+# Função de seleção por torneio
+def tournament_selection(population, fitnesses, k=3):
+    selected = random.sample(list(zip(population, fitnesses)), k)
+    selected.sort(key=lambda x: x[1])  # Ordena pelo menor MSE
+    return selected[0][0]
 
 # Função de crossover
 def crossover(parent1, parent2):
-    split_point = random.randint(0, len(parent1) - 1)
-    child = parent1[:split_point] + parent2[split_point:]
-    return child
+    point = random.randint(0, len(parent1) - 1)
+    child1 = np.concatenate((parent1[:point], parent2[point:]))
+    child2 = np.concatenate((parent2[:point], parent1[point:]))
+    return child1, child2
 
 # Função de mutação
-def mutate(chromosome, mutation_rate=0.05):
+def mutate(chromosome, mutation_rate):
     for i in range(len(chromosome)):
         if random.random() < mutation_rate:
-            chromosome[i] = random.randint(0, 255)
+            chromosome[i] += np.random.normal(0, 1)  # Mutação gaussiana
     return chromosome
 
-# Função de seleção
-def select_population(population, fitness_scores, num_parents):
-    selected_parents = random.choices(population, weights=fitness_scores, k=num_parents)
-    return selected_parents
+# Inicializar população
+population = [np.random.rand(CROMOSSOME_LENGTH) * 64 for _ in range(POP_SIZE)]
 
-# Função principal do Algoritmo Genético
-def genetic_algorithm(original_img, population_size=100, chromosome_length=150, generations=1000, mutation_rate=0.05, mse_threshold=100, time_limit=60):
-    start_time = time.time()
+# Evolução
+for generation in range(NUM_GENERATIONS):
+    fitnesses = [fitness_function(ind) for ind in population]
+    new_population = [ind for ind in sorted(population, key=fitness_function)[:ELITE_SIZE]]  # Elitismo
 
-    # Carregar a imagem original e redimensionar para 64x64
-    original_img = original_img.resize((64, 64))
+    while len(new_population) < POP_SIZE:
+        parent1 = tournament_selection(population, fitnesses)
+        parent2 = tournament_selection(population, fitnesses)
+        child1, child2 = crossover(parent1, parent2)
+        child1 = mutate(child1, MUTATION_RATE)
+        child2 = mutate(child2, MUTATION_RATE)
+        new_population.extend([child1, child2])
 
-    # Criar a população inicial
-    population = create_population(population_size, chromosome_length)
+    population = new_population[:POP_SIZE]
 
-    for generation in range(generations):
-        # Avaliar a população (fitness)
-        fitness_scores = []
-        for chrom in population:
-            generated_img = chromosome_to_image(chrom)
-            mse = calculate_mse(original_img, generated_img)
-            fitness_scores.append(1 / (1 + mse))  # O menor MSE terá a melhor fitness
+    # Melhor solução da geração
+    best_individual = sorted(population, key=fitness_function)[0]
+    best_fitness = fitness_function(best_individual)
+    print(f'Generation {generation}, Best MSE: {best_fitness}')
 
-        # Verificar se algum cromossomo atinge o critério de MSE
-        best_mse = 1 / max(fitness_scores) - 1
-        if best_mse < mse_threshold:
-            best_chromosome = population[np.argmax(fitness_scores)]
-            print(f"Gerado com sucesso na geração {generation} com MSE: {best_mse}")
-            return chromosome_to_image(best_chromosome)
+    if generation % 10 == 0:
+        intermediate_image = chromosome_to_image(best_individual)
+        plt.imshow(intermediate_image, cmap='gray')
+        plt.savefig(f'resources/out/intermediate_generation_{generation}.jpg')
 
-        # Verificar o tempo limite
-        if time.time() - start_time > time_limit:
-            best_chromosome = population[np.argmax(fitness_scores)]
-            print(f"Tempo limite atingido. Melhor MSE: {best_mse}")
-            return chromosome_to_image(best_chromosome)
+    if best_fitness < 100:
+        break
 
-        # Seleção dos pais
-        num_parents = population_size // 2
-        parents = select_population(population, fitness_scores, num_parents)
+# Exibir melhor solução
+# best_image = chromosome_to_image(best_individual)
+# plt.imshow(best_image, cmap='gray')
+# plt.savefig(f'resources/out/{IMG}', format='jpeg')
 
-        # Gerar nova população
-        new_population = []
-        for _ in range(population_size // 2):
-            parent1 = random.choice(parents)
-            parent2 = random.choice(parents)
-            child1 = crossover(parent1, parent2)
-            child2 = crossover(parent2, parent1)
-            new_population.append(mutate(child1, mutation_rate))
-            new_population.append(mutate(child2, mutation_rate))
+# Exibir melhor solução
+# best_image = chromosome_to_image(best_individual)
+# plt.imshow(best_image, cmap='gray', aspect='auto')
+# plt.axis('off')  # Remove os eixos
+# plt.gcf().set_size_inches(64 / plt.gcf().dpi, 64 / plt.gcf().dpi)  # Define o tamanho da figura como 64x64 pixels
+# plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
+# plt.savefig(f'resources/out/{IMG}', format='jpeg', dpi=64, bbox_inches='tight', pad_inches=0)
+# plt.close()  # Fecha a figura
 
-        population = new_population
-
-    best_chromosome = population[np.argmax(fitness_scores)]
-    print(f"Finalizado com MSE: {best_mse}")
-    return chromosome_to_image(best_chromosome)
-
-# Carregar a imagem original e executar o algoritmo
-original_img = Image.open("imagem_original.jpg")
-resultado = genetic_algorithm(original_img)
-
-# Salvar o resultado
-resultado.save("imagem_gerada.jpg")
-print("Imagem gerada salva como 'imagem_gerada.jpg'")
+best_image = chromosome_to_image(best_individual)
+plt.imshow(best_image, cmap='gray', aspect='auto')
+plt.axis('off')  # Remove os eixos
+plt.gcf().set_size_inches(1, 1)  # Define o tamanho da figura como 1x1 polegada
+plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
+plt.savefig(f'resources/out/{IMG}', format='jpeg', dpi=64, bbox_inches='tight', pad_inches=0)
+plt.close()  # Fecha a figura
