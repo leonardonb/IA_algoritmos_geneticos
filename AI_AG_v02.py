@@ -14,9 +14,6 @@ CROMOSSOME_LENGTH = 150
 MUTATION_RATE = 0.1
 NUM_GENERATIONS = 100
 ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
-IMG_NAME = 'estrela'
-IMG_EXTENSION = '.jpg'
-TARGET_IMG = cv2.imread(f'resources/in/{IMG_NAME}{IMG_EXTENSION}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 
 
 def chromosome_to_image(chromosome):
@@ -61,10 +58,16 @@ def mutate(chromosome, mutation_rate):
     return chromosome
 
 
-def genetic_algorithm(population):
+def genetic_algorithm(population, image_name, img_extension):
+    print()
     print(datetime.now())
     start_time = time.time()
     for generation in range(NUM_GENERATIONS):
+        moment_time = time.time() - start_time
+        if moment_time > TIME_LIMIT:
+            print(datetime.now())
+            return best_individual
+
         fitnesses = [fitness_function(ind) for ind in population]
         new_population = [ind for ind in sorted(population, key=fitness_function)[:ELITE_SIZE]]  # Elitismo
 
@@ -85,11 +88,9 @@ def genetic_algorithm(population):
 
         if generation % 10 == 0:
             intermediate_image = chromosome_to_image(best_individual)
-            plt.imshow(intermediate_image, cmap='gray')
-            plt.savefig(f'resources/out/{IMG_NAME}_generation_{generation}.jpg')
+            drawImage(intermediate_image, f'{image_name}_generation_{generation}', img_extension)
 
-        moment_time = time.time() - start_time
-        if best_fitness < 100 or moment_time > TIME_LIMIT:
+        if best_fitness < 100:
             print(datetime.now())
             return best_individual
 
@@ -98,18 +99,34 @@ def create_population():
     return [np.random.rand(CROMOSSOME_LENGTH) * 64 for _ in range(POP_SIZE)]
 
 
-def drawImage(best_image):
+def drawImage(best_image, image_name, image_extension):
     plt.imshow(best_image, cmap='gray', aspect='auto')
     plt.axis('off')  # Remove os eixos
     plt.gcf().set_size_inches(1, 1)  # Define o tamanho da figura como 1x1 polegada
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
-    plt.savefig(f'resources/out/{IMG_NAME}{IMG_EXTENSION}', format='jpg', dpi=64, bbox_inches='tight', pad_inches=0)
-    plt.close()  # Fecha a figura
+    plt.savefig(f'resources/out/{image_name}{image_extension}', format='jpg', dpi=64, bbox_inches='tight', pad_inches=0)
+    plt.close()
 
 
-# Inicializar população
+def process_all():
+    images_names = ['c', 'coracao', 'estrela', 'raio', 'rosto', 'seta']
+
+    for image in images_names:
+        img_extension = '.jpg'
+        TARGET_IMG = cv2.imread(f'resources/in/{image}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+        population = create_population()
+        best_individual = genetic_algorithm(population, image, img_extension)
+        best_image = chromosome_to_image(best_individual)
+        drawImage(best_image, image, img_extension)
+
+
+image_name = 'estrela'
+img_extension = '.jpg'
+TARGET_IMG = cv2.imread(f'resources/in/{image_name}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+
 population = create_population()
-best_individual = genetic_algorithm(population)
+best_individual = genetic_algorithm(population, image_name, img_extension)
 best_image = chromosome_to_image(best_individual)
-drawImage(best_image)
+drawImage(best_image, image_name, img_extension)
 
+# process_all()
