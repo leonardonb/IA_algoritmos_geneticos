@@ -1,3 +1,6 @@
+import time
+from datetime import datetime
+
 import numpy as np
 import random
 import cv2  # Para carregar a imagem alvo
@@ -11,8 +14,9 @@ CROMOSSOME_LENGTH = 150
 MUTATION_RATE = 0.1
 NUM_GENERATIONS = 100
 ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
-IMG = 'estrela.jpeg'
-TARGET_IMG = cv2.imread(f'resources/in/{IMG}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+IMG_NAME = 'estrela'
+IMG_EXTENSION = '.jpg'
+TARGET_IMG = cv2.imread(f'resources/in/{IMG_NAME}{IMG_EXTENSION}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 
 
 def chromosome_to_image(chromosome):
@@ -27,10 +31,12 @@ def chromosome_to_image(chromosome):
         img[mask] = 0  # Círculos pretos
     return img
 
+
 def fitness_function(chromosome):
     generated_img = chromosome_to_image(chromosome)
     mse = np.mean((generated_img - TARGET_IMG) ** 2)
     return mse
+
 
 # Função de seleção por torneio
 def tournament_selection(population, fitnesses, k=3):
@@ -38,12 +44,14 @@ def tournament_selection(population, fitnesses, k=3):
     selected.sort(key=lambda x: x[1])  # Ordena pelo menor MSE
     return selected[0][0]
 
+
 # Função de crossover
 def crossover(parent1, parent2):
     point = random.randint(0, len(parent1) - 1)
     child1 = np.concatenate((parent1[:point], parent2[point:]))
     child2 = np.concatenate((parent2[:point], parent1[point:]))
     return child1, child2
+
 
 # Função de mutação
 def mutate(chromosome, mutation_rate):
@@ -78,7 +86,7 @@ def genetic_algorithm(population):
         if generation % 10 == 0:
             intermediate_image = chromosome_to_image(best_individual)
             plt.imshow(intermediate_image, cmap='gray')
-            plt.savefig(f'resources/out/intermediate_generation_{generation}.jpg')
+            plt.savefig(f'resources/out/{IMG_NAME}_generation_{generation}.jpg')
 
         moment_time = time.time() - start_time
         if best_fitness < 100 or moment_time > TIME_LIMIT:
@@ -95,7 +103,7 @@ def drawImage(best_image):
     plt.axis('off')  # Remove os eixos
     plt.gcf().set_size_inches(1, 1)  # Define o tamanho da figura como 1x1 polegada
     plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
-    plt.savefig(f'resources/out/{IMG}', format='jpeg', dpi=64, bbox_inches='tight', pad_inches=0)
+    plt.savefig(f'resources/out/{IMG_NAME}{IMG_EXTENSION}', format='jpg', dpi=64, bbox_inches='tight', pad_inches=0)
     plt.close()  # Fecha a figura
 
 
