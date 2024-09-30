@@ -11,7 +11,8 @@ CROMOSSOME_LENGTH = 150  # Número máximo de posições no cromossomo
 MUTATION_RATE = 0.01  # Taxa de mutação
 NUM_GENERATIONS = 100  # Número de gerações
 ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
-TARGET_IMG = cv2.imread('resources/in/c.jpeg', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+IMG = 'coracao.jpeg'
+TARGET_IMG = cv2.imread(f'resources/in/{IMG}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 TARGET_IMG = cv2.resize(TARGET_IMG, (64, 64))  # Redimensionar para 64x64
 
 def chromosome_to_image(chromosome):
@@ -78,7 +79,24 @@ for generation in range(NUM_GENERATIONS):
         break
 
 # Exibir melhor solução
+# best_image = chromosome_to_image(best_individual)
+# plt.imshow(best_image, cmap='gray')
+# plt.savefig(f'resources/out/{IMG}', format='jpeg')
+
+# Exibir melhor solução
+# best_image = chromosome_to_image(best_individual)
+# plt.imshow(best_image, cmap='gray', aspect='auto')
+# plt.axis('off')  # Remove os eixos
+# plt.gcf().set_size_inches(64 / plt.gcf().dpi, 64 / plt.gcf().dpi)  # Define o tamanho da figura como 64x64 pixels
+# plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
+# plt.savefig(f'resources/out/{IMG}', format='jpeg', dpi=64, bbox_inches='tight', pad_inches=0)
+# plt.close()  # Fecha a figura
+
 best_image = chromosome_to_image(best_individual)
-plt.imshow(best_image, cmap='gray')
-plt.savefig('resources/out/best_solution.jpeg', format='jpeg')
+plt.imshow(best_image, cmap='gray', aspect='auto')
+plt.axis('off')  # Remove os eixos
+plt.gcf().set_size_inches(1, 1)  # Define o tamanho da figura como 1x1 polegada
+plt.subplots_adjust(left=0, right=1, top=1, bottom=0)  # Remove espaços em branco
+plt.savefig(f'resources/out/{IMG}', format='jpeg', dpi=64, bbox_inches='tight', pad_inches=0)
+plt.close()  # Fecha a figura
 
