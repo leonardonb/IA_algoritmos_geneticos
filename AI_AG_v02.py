@@ -11,7 +11,7 @@ CROMOSSOME_LENGTH = 150  # Número máximo de posições no cromossomo
 MUTATION_RATE = 0.01  # Taxa de mutação
 NUM_GENERATIONS = 100  # Número de gerações
 ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
-TARGET_IMG = cv2.imread('target.jpg', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+TARGET_IMG = cv2.imread('resources/in/c.jpeg', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 TARGET_IMG = cv2.resize(TARGET_IMG, (64, 64))  # Redimensionar para 64x64
 
 def chromosome_to_image(chromosome):
@@ -80,4 +80,5 @@ for generation in range(NUM_GENERATIONS):
 # Exibir melhor solução
 best_image = chromosome_to_image(best_individual)
 plt.imshow(best_image, cmap='gray')
-plt.savefig('best_solution.png')  # Salva a imagem como arquivo
+plt.savefig('resources/out/best_solution.jpeg', format='jpeg')
+
