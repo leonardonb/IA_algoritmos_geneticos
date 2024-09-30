@@ -11,7 +11,7 @@ CROMOSSOME_LENGTH = 150  # Número máximo de posições no cromossomo
 MUTATION_RATE = 0.01  # Taxa de mutação
 NUM_GENERATIONS = 100  # Número de gerações
 ELITE_SIZE = 2  # Número de indivíduos mantidos por elitismo
-IMG = 'coracao.jpeg'
+IMG = 'coracao.jpg'
 TARGET_IMG = cv2.imread(f'resources/in/{IMG}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 TARGET_IMG = cv2.resize(TARGET_IMG, (64, 64))  # Redimensionar para 64x64
 
@@ -74,6 +74,11 @@ for generation in range(NUM_GENERATIONS):
     best_individual = sorted(population, key=fitness_function)[0]
     best_fitness = fitness_function(best_individual)
     print(f'Generation {generation}, Best MSE: {best_fitness}')
+
+    if generation % 10 == 0:
+        intermediate_image = chromosome_to_image(best_individual)
+        plt.imshow(intermediate_image, cmap='gray')
+        plt.savefig(f'resources/out/intermediate_generation_{generation}.jpg')
 
     if best_fitness < 100:
         break
