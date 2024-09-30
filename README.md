@@ -2,4 +2,6 @@
 Parte de avaliação na disciplina de IA_BCC_UFAPE - Algoritmos genéticos
 
 Melhores MSE:
-Generation 99, Best MSE: 2337.524658203125
+
+Generation 79, Best MSE: 2899.482177734375
+2024-09-29 23:05:58.167130
