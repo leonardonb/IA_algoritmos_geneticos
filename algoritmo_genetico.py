@@ -30,9 +30,9 @@ def chromosome_to_image(chromosome):
     return img
 
 
-def fitness_function(chromosome):
+def fitness_function(chromosome, target_img):
     generated_img = chromosome_to_image(chromosome)
-    mse = np.mean((generated_img - TARGET_IMG) ** 2)
+    mse = np.mean((generated_img - target_img) ** 2)
     return mse
 
 
@@ -59,7 +59,7 @@ def mutate(chromosome, mutation_rate):
     return chromosome
 
 
-def genetic_algorithm(population, image_name, img_extension):
+def genetic_algorithm(population, image_name, img_extension, target_img):
     print()
     print(f"Início: {datetime.now()}")
     start_time = time.time()
@@ -71,8 +71,9 @@ def genetic_algorithm(population, image_name, img_extension):
             print(datetime.now())
             return best_individual
 
-        fitnesses = [fitness_function(ind) for ind in population]
-        new_population = [ind for ind in sorted(population, key=fitness_function)[:ELITE_SIZE]]  # Elitismo
+        fitnesses = [fitness_function(ind, target_img) for ind in population]
+        new_population = [individual for individual in sorted(population, key=lambda chromosome: fitness_function(chromosome, target_img))[:ELITE_SIZE]]  # Elitismo
+
 
         while len(new_population) < POP_SIZE:
             parent1 = tournament_selection(population, fitnesses)
@@ -85,8 +86,8 @@ def genetic_algorithm(population, image_name, img_extension):
         population = new_population[:POP_SIZE]
 
         # Melhor solução da geração
-        best_individual = sorted(population, key=fitness_function)[0]
-        best_fitness = fitness_function(best_individual)
+        best_individual = sorted(population, key=lambda chromosome: fitness_function(chromosome, target_img))[0]
+        best_fitness = fitness_function(best_individual, target_img)
         print(f'Generation {generation}, Best MSE: {best_fitness}')
 
         if generation % 10 == 0:
@@ -119,20 +120,22 @@ def process_all():
     images_names = ['c', 'coracao', 'estrela', 'raio', 'rosto', 'seta']
 
     for image in images_names:
-        img_extension = '.jpg'
-        TARGET_IMG = cv2.imread(f'resources/in/{image}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
-        population = create_population()
-        best_individual = genetic_algorithm(population, image, img_extension)
-        best_image = chromosome_to_image(best_individual)
-        drawImage(best_image, image, img_extension)
+        print()
+        print(f'------------------- {image} ---------------------')
+        extension = '.jpg'
+        target = cv2.imread(f'resources/in/{image}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+        pop = create_population()
+        best_ind = genetic_algorithm(pop, image, extension, target)
+        best_img = chromosome_to_image(best_ind)
+        drawImage(best_img, image, img_extension)
 
 
 image_name = 'estrela'
 img_extension = '.jpg'
-TARGET_IMG = cv2.imread(f'resources/in/{image_name}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
+target_img = cv2.imread(f'resources/in/{image_name}{img_extension}', cv2.IMREAD_GRAYSCALE)  # Carregar imagem alvo
 
 population = create_population()
-best_individual = genetic_algorithm(population, image_name, img_extension)
+best_individual = genetic_algorithm(population, image_name, img_extension, target_img)
 best_image = chromosome_to_image(best_individual)
 drawImage(best_image, image_name, img_extension)
 
